@@ -4,7 +4,7 @@ from bs4.element import Tag
 import yfinance as yf 
 
 def get_cagr(ticker, name, time_period):
-    # name param shouald be name in the url on macrotrends 
+    # name param should be name in the url on macrotrends 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
     }
