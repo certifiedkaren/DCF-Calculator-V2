@@ -13,7 +13,7 @@ def get_cagr(ticker, name, time_period):
 
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
-    
+
     annual_title = soup.find('th', string=f'{name.title()} Annual Free Cash Flow')
     if not isinstance(annual_title, Tag):
         raise LookupError("Header not found")
@@ -112,10 +112,3 @@ def calculate_dcf(ticker, base_fcf, growth_rate, perpetual_growth_rate, discount
 
     return round(intrinsic_value,2), round(intrinsic_value * 0.7) 
 
-ticker = "tsla"
-discount_rate = calculate_wacc(ticker, calculate_capm(ticker))
-base_fcf = calculate_base_fcf(ticker)
-
-fcf = calculate_dcf(ticker, base_fcf, 0.15, 0.025, discount_rate, 10)
-print(f"discount rate {discount_rate}")
-print(fcf)
