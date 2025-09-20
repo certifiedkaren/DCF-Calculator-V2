@@ -30,11 +30,11 @@ def get_price_endpoint(ticker:str):
         raise HTTPException(status_code=500, detail=f"Internal Error: {e}")  
 
 
-@app.get("/cagr/{ticker}/{name}")
-def get_cagr_endpoint(ticker:str, name:str, time_period: int = Query(5, ge=1)):
+@app.get("/pastfcf/{ticker}")
+def get_past_fcf_endpoint(ticker:str): 
     try: 
-        cagr = analysis.get_cagr(ticker, name, time_period)
-        return {"cagr": cagr}
+        pastfcf = analysis.get_past_fcfs(ticker)
+        return {"pastfcf": pastfcf}
     except KeyError as e:
         raise HTTPException(status_code=404, detail=f"Data not found {e}") 
     except IndexError as e:

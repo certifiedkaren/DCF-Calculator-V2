@@ -2,9 +2,8 @@
 import { PlusIcon, MinusIcon } from '@heroicons/vue/20/solid'
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import { fetchCapm, fetchBaseFcf, fetchWacc, fetchDcf, fetchAllForTicker } from './stocks'
+import { fetchCapm, fetchBaseFcf, fetchWacc, fetchDcf, fetchPastFcf, calcCagr } from './stocks'
 
-// don't hardcode later
 const ticker = ref('msft')
 const input = ref('')
 const price = ref(0)
@@ -54,6 +53,12 @@ const handleConfirm = async () => {
   await fetchPrice()
   await fetchDiscountRate()
   await fetchData()
+
+  const fcfs = await fetchPastFcf(ticker.value)
+  const cagr1y = calcCagr(fcfs, 1)
+  const cagr5y = calcCagr(fcfs, 5)
+  const cagr10y = calcCagr(fcfs, 10)
+  console.log({ cagr1y, cagr5y, cagr10y })
 }
 </script>
 
