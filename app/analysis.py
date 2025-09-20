@@ -3,6 +3,10 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 import yfinance as yf 
 
+def get_price(ticker):
+    dat = yf.Ticker(ticker)
+    price = dat.info["currentPrice"]
+    return price
 
 def get_cagr(ticker, name, time_period):
     # name param should be name in the url on macrotrends 
