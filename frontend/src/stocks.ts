@@ -8,6 +8,23 @@ const api = axios.create({
 const capmCache = new Map<string, number>()
 const baseFcfCache = new Map<string, number>()
 const waccCache = new Map<string, number>()
+const pastFcfCache = new Map<string, number[]>()
+
+export async function fetchPastFcf(ticker: string): Promise<number[]> {
+  if (pastFcfCache.has(ticker)) return pastFcfCache.get(ticker)!
+  const { data } = await api.get(`/pastfcf/${ticker}`)
+  pastFcfCache.set(ticker, data.pastfcf)
+  return data.pastfcf
+}
+
+export function calcCagr(series: number[], years: number): number {
+  if (series.length < years + 1) throw new Error('Not enough data')
+  const end = series[0]
+  const start = series[years]
+  if (start <= 0 || end <= 0) throw new Error('Non-positive FCF value makes CAGR undefined')
+  const cagr = Math.pow(end / start, 1 / years) - 1
+  return Math.round(cagr * 100) / 100
+}
 
 export async function fetchCapm(ticker: string): Promise<number> {
   if (capmCache.has(ticker)) return capmCache.get(ticker)!

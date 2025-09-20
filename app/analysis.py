@@ -1,24 +1,25 @@
 import requests 
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-import yfinance as yf 
+import yfinance as yf
+import re  
+from fastapi import HTTPException
 
 def get_price(ticker):
     dat = yf.Ticker(ticker)
     price = dat.info["currentPrice"]
     return price
 
-def get_cagr(ticker, name, time_period):
-    # name param should be name in the url on macrotrends 
+def get_past_fcfs(ticker):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
     }
-    url = f'https://www.macrotrends.net/stocks/charts/{ticker}/{name.title()}/free-cash-flow'
+    url = f'https://www.macrotrends.net/stocks/charts/{ticker}/placeholder/free-cash-flow'
 
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    annual_title = soup.find('th', string=f'{name.title()} Annual Free Cash Flow')
+    annual_title = soup.find('th', string=re.compile('Annual Free Cash Flow'))
     if not isinstance(annual_title, Tag):
         raise LookupError("Header not found")
 
@@ -29,10 +30,12 @@ def get_cagr(ticker, name, time_period):
     free_cash_flow = annual_table.find_all('td') 
     td_text = [td.get_text(strip=True) for td in free_cash_flow]
     cash_flow_values = td_text[1::2]
-    cash_flow_ints = [int(val.replace(',', '').split('.')[0]) for val in cash_flow_values][:time_period]
-    cagr = (cash_flow_ints[0] / cash_flow_ints[-1]) ** (1 / len(cash_flow_ints)) - 1 
+    fcfs = [int(val.replace(',', '').split('.')[0]) for val in cash_flow_values]
+    
+    if not fcfs:
+        raise HTTPException(status_code=404, detail="No FCF data found") 
 
-    return round(cagr, 3)
+    return fcfs
 
 def calculate_wacc(ticker, capm):
     dat = yf.Ticker(ticker)
