@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PlusIcon, MinusIcon } from '@heroicons/vue/20/solid'
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 
@@ -37,12 +38,85 @@ const fetchData = async () => {
 
 <template>
   <div class="min-h-screen text-white">
-    <div class="flex justify-center">
-      <h1 class="text-3xl">DCF Calculator</h1>
+    <div class="flex flex-col items-center space-y-4">
+      <h1 class="text-3xl font-bold">DCF Calculator</h1>
+      <div class="flex justify-center space-x-4">
+        <p class="text-lg">MSFT</p>
+        <input type="text" placeholder="Search Ticker" class="border" />
+      </div>
+
+      <div class="flex justify-center space-x-4">
+        <p class="text-lg">Stock Price</p>
+        <p class="text-lg">$300.00</p>
+      </div>
+
+      <div class="flex justify-center space-x-4">
+        <p class="text-lg">Discount Rate</p>
+        <p class="text-lg">10%</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4 mt-4">
+        <div class="flex flex-col space-y-2 rounded-lg border p-4">
+          <p class="text-lg text-center font-bold">Growth Stage</p>
+          <div class="flex justify-center space-x-4">
+            <p class="text-lg">Years</p>
+            <div class="flex justify-center">
+              <button class="px-2 py-0.5 bg-purple-300 rounded">
+                <minus-icon class="size-3 text-black"></minus-icon>
+              </button>
+              <span class="text-lg">10</span>
+              <button class="px-2 py-0.5 bg-purple-300 rounded text-black">
+                <plus-icon class="size-3"></plus-icon>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex justify-center space-x-4">
+            <p class="text-lg">Growth Rate</p>
+            <div class="flex justify-center">
+              <button class="px-2 py-0.5 bg-purple-300 rounded">
+                <minus-icon class="size-3 text-black"></minus-icon>
+              </button>
+              <span class="text-lg">15%</span>
+              <button class="px-2 py-0.5 bg-purple-300 rounded text-black">
+                <plus-icon class="size-3"></plus-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col space-y-2 ml-8 rounded-lg border p-4">
+          <p class="text-lg text-center font-bold">Terminal Stage</p>
+          <div class="flex justify-center space-x-4">
+            <p class="text-lg">Growth Rate</p>
+            <div class="flex justify-center">
+              <button class="px-2 py-0.5 bg-purple-300 rounded">
+                <minus-icon class="size-3 text-black"></minus-icon>
+              </button>
+              <span class="text-lg">15%</span>
+              <button class="px-2 py-0.5 bg-purple-300 rounded text-black">
+                <plus-icon class="size-3"></plus-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="border rounded-lg p-10 divide-y divide-white space-y-6 mt-4">
+        <div class="flex justify-center space-x-4">
+          <p class="text-lg">Stock Price</p>
+          <p class="text-lg">$300.00</p>
+        </div>
+        <div class="flex justify-center space-x-4">
+          <p class="text-lg">Fair Value</p>
+          <p class="text-lg">$200.00</p>
+        </div>
+        <div class="flex justify-center space-x-4">
+          <p class="text-lg">Margin of Safety</p>
+          <p class="text-lg">30%</p>
+        </div>
+      </div>
     </div>
-    <button class="px-4 py-2 bg-blue-400 rounded hover:bg-blue-500" @click="fetchData()">
-      get data
-    </button>
   </div>
 </template>
 
