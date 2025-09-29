@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { PlusIcon, MinusIcon } from '@heroicons/vue/20/solid'
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import axios from 'axios'
 import { fetchCapm, fetchBaseFcf, fetchWacc, fetchDcf, fetchPastFcf, calcCagr } from './stocks'
 
@@ -12,6 +11,22 @@ const years = ref(7)
 const perpetualGrowthRate = ref(0.025)
 const discountRate = ref(0)
 const marginOfSafety = ref(0.3)
+
+const growthRatePercent = computed({
+  get: () => +(growthRate.value * 100).toFixed(2),
+  set: (val: number) => {
+    const v = isFinite(val) ? val : 0
+    growthRate.value = v / 100
+  },
+})
+
+const perpetualGrowthRatePercent = computed({
+  get: () => +(perpetualGrowthRate.value * 100).toFixed(2),
+  set: (val: number) => {
+    const v = isFinite(val) ? val : 0
+    perpetualGrowthRate.value = v / 100
+  },
+})
 
 const result = ref<any>(null)
 const error = ref('')
@@ -47,6 +62,12 @@ const fetchData = async () => {
     error.value = err.message ?? 'Something went wrong'
   }
 }
+
+watch([growthRate, years, perpetualGrowthRate], () => {
+  if (result.value !== null) {
+    fetchData()
+  }
+})
 
 const handleConfirm = async () => {
   saveInput()
@@ -88,26 +109,23 @@ const handleConfirm = async () => {
           <div class="flex justify-center space-x-4">
             <p class="text-lg">Years</p>
             <div class="flex justify-center">
-              <button class="px-2 py-0.5 bg-gray-400 rounded">
-                <minus-icon class="size-3 text-black"></minus-icon>
-              </button>
-              <span class="text-lg">{{ years }}</span>
-              <button class="px-2 py-0.5 bg-gray-400 rounded text-black">
-                <plus-icon class="size-3"></plus-icon>
-              </button>
+              <input
+                type="number"
+                v-model="years"
+                class="w-16 text-center bg-gray-800 text-white"
+              />
             </div>
           </div>
 
           <div class="flex justify-center space-x-4">
             <p class="text-lg">Growth Rate</p>
             <div class="flex justify-center">
-              <button class="px-2 py-0.5 bg-gray-400 rounded">
-                <minus-icon class="size-3 text-black"></minus-icon>
-              </button>
-              <span class="text-lg">{{ growthRate }}%</span>
-              <button class="px-2 py-0.5 bg-gray-400 rounded text-black">
-                <plus-icon class="size-3"></plus-icon>
-              </button>
+              <input
+                type="number"
+                v-model.number="growthRatePercent"
+                class="w-16 text-center bg-gray-800 text-white"
+                step="1"
+              />
             </div>
           </div>
         </div>
@@ -117,13 +135,12 @@ const handleConfirm = async () => {
           <div class="flex justify-center space-x-4">
             <p class="text-lg">Growth Rate</p>
             <div class="flex justify-center">
-              <button class="px-2 py-0.5 bg-gray-400 rounded">
-                <minus-icon class="size-3 text-black"></minus-icon>
-              </button>
-              <span class="text-lg">{{ perpetualGrowthRate }}%</span>
-              <button class="px-2 py-0.5 bg-gray-400 rounded text-black">
-                <plus-icon class="size-3"></plus-icon>
-              </button>
+              <input
+                type="number"
+                v-model.number="perpetualGrowthRatePercent"
+                class="w-20 text-center bg-gray-800 text-white"
+                step="0.5"
+              />
             </div>
           </div>
         </div>
