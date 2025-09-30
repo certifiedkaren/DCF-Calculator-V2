@@ -34,6 +34,14 @@ const perpetualGrowthRatePercent = computed({
   },
 })
 
+const discountRatePercent = computed({
+  get: () => +(discountRate.value * 100).toFixed(2),
+  set: (val: number) => {
+    const v = isFinite(val) ? val : 0
+    discountRate.value = v / 100
+  },
+})
+
 const result = ref<any>(null)
 const error = ref('')
 
@@ -62,7 +70,7 @@ const calculateDcf = async () => {
   }
 }
 
-watch([growthRate, years, perpetualGrowthRate], () => {
+watch([growthRate, years, perpetualGrowthRate, discountRate], () => {
   if (result.value !== null) {
     calculateDcf()
   }
@@ -144,7 +152,14 @@ const handleConfirm = async () => {
 
         <div class="flex justify-center space-x-4">
           <p class="text-lg">Discount Rate</p>
-          <p class="text-lg">{{ (discountRate * 100).toFixed(1) }}%</p>
+          <div class="flex justify-center">
+            <input
+              type="number"
+              v-model.number="discountRatePercent"
+              class="w-16 text-center bg-gray-800 text-white"
+              step="1"
+            />
+          </div>
         </div>
 
         <div class="grid grid-cols-3 gap-4 mt-4">
