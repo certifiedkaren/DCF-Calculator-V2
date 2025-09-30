@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import axios from 'axios'
 import { fetchCapm, fetchBaseFcf, fetchWacc, fetchDcf, fetchPastFcf, calcCagr } from './stocks'
 
-const ticker = ref('msft')
+const ticker = ref('')
 const input = ref('')
 const price = ref(0)
 const growthRate = ref(0.15)
@@ -11,6 +11,12 @@ const years = ref(7)
 const perpetualGrowthRate = ref(0.025)
 const discountRate = ref(0)
 const marginOfSafety = ref(0.3)
+
+const cagr1y = ref(0)
+const cagr5y = ref(0)
+const cagr10y = ref(0)
+
+const loading = ref(false)
 
 const growthRatePercent = computed({
   get: () => +(growthRate.value * 100).toFixed(2),
@@ -32,22 +38,14 @@ const result = ref<any>(null)
 const error = ref('')
 
 const saveInput = () => {
-  ticker.value = input.value
-  input.value = ''
+  if (input.value) {
+    ticker.value = input.value
+    input.value = ''
+  }
 }
 
-const fetchPrice = async () => {
-  const currentPrice = await axios.get(`http://127.0.0.1:8000/price/${ticker.value}`)
-  price.value = currentPrice.data.currentprice
-}
-
-const fetchDiscountRate = async () => {
-  const capm = await fetchCapm(ticker.value)
-  const wacc = await fetchWacc(ticker.value, capm)
-  discountRate.value = wacc
-}
-
-const fetchData = async () => {
+const calculateDcf = async () => {
+  if (!ticker.value) return
   try {
     const basefcf = await fetchBaseFcf(ticker.value)
     const data = await fetchDcf(ticker.value, {
@@ -60,26 +58,62 @@ const fetchData = async () => {
     result.value = data.base_case
   } catch (err: any) {
     error.value = err.message ?? 'Something went wrong'
+    result.value = null
   }
 }
 
 watch([growthRate, years, perpetualGrowthRate], () => {
   if (result.value !== null) {
-    fetchData()
+    calculateDcf()
   }
 })
 
 const handleConfirm = async () => {
   saveInput()
-  await fetchPrice()
-  await fetchDiscountRate()
-  await fetchData()
+  if (!ticker.value) return
 
-  const fcfs = await fetchPastFcf(ticker.value)
-  const cagr1y = calcCagr(fcfs, 1)
-  const cagr5y = calcCagr(fcfs, 5)
-  const cagr10y = calcCagr(fcfs, 10)
-  console.log({ cagr1y, cagr5y, cagr10y })
+  loading.value = true
+  error.value = ''
+
+  try {
+    const [priceData, capm, pastFcf] = await Promise.all([
+      axios.get(`http://127.0.0.1:8000/price/${ticker.value}`),
+      fetchCapm(ticker.value),
+      fetchPastFcf(ticker.value),
+    ])
+
+    const wacc = await fetchWacc(ticker.value, capm)
+    price.value = priceData.data.currentprice
+    discountRate.value = wacc
+
+    try {
+      cagr1y.value = calcCagr(pastFcf, 1)
+    } catch {
+      cagr1y.value = 0
+    }
+    try {
+      cagr5y.value = calcCagr(pastFcf, 5)
+    } catch {
+      cagr5y.value = 0
+    }
+    try {
+      cagr10y.value = calcCagr(pastFcf, 10)
+    } catch {
+      cagr10y.value = 0
+    }
+
+    await calculateDcf()
+  } catch (err: any) {
+    error.value = 'Failed to fetch data. Please check the ticker and try again.'
+    price.value = 0
+    discountRate.value = 0
+    result.value = null
+    cagr1y.value = 0
+    cagr5y.value = 0
+    cagr10y.value = 0
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -89,97 +123,106 @@ const handleConfirm = async () => {
       <h1 class="text-3xl font-bold">DCF Calculator</h1>
       <div class="flex justify-center space-x-4">
         <p class="text-lg">{{ ticker }}</p>
-        <input type="text" placeholder="Search Ticker" v-model="input" class="border" />
+        <input
+          type="text"
+          placeholder="Search Ticker"
+          v-model="input"
+          @keyup.enter="handleConfirm"
+          class="border"
+        />
         <button class="rounded bg-gray-400 px-3 py-1" @click="handleConfirm">Search</button>
       </div>
 
-      <div class="flex justify-center space-x-4">
-        <p class="text-lg">Stock Price</p>
-        <p class="text-lg">${{ price }}</p>
-      </div>
+      <div v-if="loading" class="text-lg">Loading...</div>
+      <div v-if="error" class="text-lg text-red-500">{{ error }}</div>
 
-      <div class="flex justify-center space-x-4">
-        <p class="text-lg">Discount Rate</p>
-        <p class="text-lg">{{ discountRate }}%</p>
-      </div>
-
-      <div class="grid grid-cols-3 gap-4 mt-4">
-        <div class="flex flex-col space-y-2 rounded-lg border p-4">
-          <p class="text-lg text-center font-bold">Growth Stage</p>
-          <div class="flex justify-center space-x-4">
-            <p class="text-lg">Years</p>
-            <div class="flex justify-center">
-              <input
-                type="number"
-                v-model="years"
-                class="w-16 text-center bg-gray-800 text-white"
-              />
-            </div>
-          </div>
-
-          <div class="flex justify-center space-x-4">
-            <p class="text-lg">Growth Rate</p>
-            <div class="flex justify-center">
-              <input
-                type="number"
-                v-model.number="growthRatePercent"
-                class="w-16 text-center bg-gray-800 text-white"
-                step="1"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col space-y-2 ml-8 rounded-lg border p-4">
-          <p class="text-lg text-center font-bold">Terminal Stage</p>
-          <div class="flex justify-center space-x-4">
-            <p class="text-lg">Growth Rate</p>
-            <div class="flex justify-center">
-              <input
-                type="number"
-                v-model.number="perpetualGrowthRatePercent"
-                class="w-20 text-center bg-gray-800 text-white"
-                step="0.5"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="flex flex-col space-y-2 ml-8 rounded-lg border p-4">
-          <p class="text-lg font-bold">Past FCF Growth Rate</p>
-          <div class="space-y-2">
-            <p class="flex justify-between text-lg">
-              <span>10y</span>
-              <span>0%</span>
-            </p>
-            <p class="flex justify-between text-lg">
-              <span>5y</span>
-              <span>0%</span>
-            </p>
-            <p class="flex justify-between text-lg">
-              <span>YTD</span>
-              <span>0%</span>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="border rounded-lg p-10 divide-y divide-white space-y-6 mt-4">
+      <template v-if="!loading && result">
         <div class="flex justify-center space-x-4">
           <p class="text-lg">Stock Price</p>
           <p class="text-lg">${{ price }}</p>
         </div>
+
         <div class="flex justify-center space-x-4">
-          <p class="text-lg">Fair Value</p>
-          <p class="text-lg">${{ result }}</p>
+          <p class="text-lg">Discount Rate</p>
+          <p class="text-lg">{{ (discountRate * 100).toFixed(1) }}%</p>
         </div>
-        <div class="flex justify-center space-x-4">
-          <p class="text-lg">Margin of Safety</p>
-          <p class="text-lg">{{ marginOfSafety }}%</p>
+
+        <div class="grid grid-cols-3 gap-4 mt-4">
+          <div class="flex flex-col space-y-2 rounded-lg border p-4">
+            <p class="text-lg text-center font-bold">Growth Stage</p>
+            <div class="flex justify-center space-x-4">
+              <p class="text-lg">Years</p>
+              <div class="flex justify-center">
+                <input
+                  type="number"
+                  v-model="years"
+                  class="w-16 text-center bg-gray-800 text-white"
+                />
+              </div>
+            </div>
+
+            <div class="flex justify-center space-x-4">
+              <p class="text-lg">Growth Rate</p>
+              <div class="flex justify-center">
+                <input
+                  type="number"
+                  v-model.number="growthRatePercent"
+                  class="w-16 text-center bg-gray-800 text-white"
+                  step="1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col space-y-2 ml-8 rounded-lg border p-4">
+            <p class="text-lg text-center font-bold">Terminal Stage</p>
+            <div class="flex justify-center space-x-4">
+              <p class="text-lg">Growth Rate</p>
+              <div class="flex justify-center">
+                <input
+                  type="number"
+                  v-model.number="perpetualGrowthRatePercent"
+                  class="w-20 text-center bg-gray-800 text-white"
+                  step="0.5"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col space-y-2 ml-8 rounded-lg border p-4">
+            <p class="text-lg font-bold">Past FCF Growth Rate</p>
+            <div class="space-y-2">
+              <p class="flex justify-between text-lg">
+                <span>10y</span>
+                <span>{{ (cagr10y * 100).toFixed(0) }}%</span>
+              </p>
+              <p class="flex justify-between text-lg">
+                <span>5y</span>
+                <span>{{ (cagr5y * 100).toFixed(0) }}%</span>
+              </p>
+              <p class="flex justify-between text-lg">
+                <span>1y</span>
+                <span>{{ (cagr1y * 100).toFixed(0) }}%</span>
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div class="border rounded-lg p-10 divide-y divide-white space-y-6 mt-4">
+          <div class="flex justify-center space-x-4">
+            <p class="text-lg">Stock Price</p>
+            <p class="text-lg">${{ price.toFixed(2) }}</p>
+          </div>
+          <div class="flex justify-center space-x-4">
+            <p class="text-lg">Fair Value</p>
+            <p class="text-lg">${{ result.toFixed(2) }}</p>
+          </div>
+          <div class="flex justify-center space-x-4">
+            <p class="text-lg">Margin of Safety</p>
+            <p class="text-lg">{{ marginOfSafety * 100 }}%</p>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>
-
-<style scoped></style>
