@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException 
 from fastapi.middleware.cors import CORSMiddleware
 import analysis
 from models import DCFRequest, DCFResponse
@@ -16,6 +16,7 @@ app.add_middleware(
     allow_methods=["*"], 
     allow_headers=["*"],  
 )
+
 
 @app.get("/price/{ticker}")
 def get_price_endpoint(ticker:str):
@@ -80,7 +81,20 @@ def get_basefcf_endpoint(ticker:str):
         raise HTTPException(status_code=404, detail=f"Not enough data for calculation") 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal Error: {e}")
-    
+
+
+@app.get("/eps/{ticker}")
+def get_eps_endpoint(ticker: str):
+    try: 
+        eps = analysis.get_eps(ticker)
+        return {"eps": eps}
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Data not found {e}") 
+    except IndexError as e:
+        raise HTTPException(status_code=404, detail=f"Not enough data for calculation") 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal Error: {e}")
+
 
 @app.post("/dcf/{ticker}", response_model=DCFResponse) 
 def get_dcf_endpoint(ticker:str, payload: DCFRequest):

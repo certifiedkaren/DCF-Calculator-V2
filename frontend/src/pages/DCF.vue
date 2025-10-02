@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import axios from 'axios'
-import { fetchCapm, fetchBaseFcf, fetchWacc, fetchDcf, fetchPastFcf, calcCagr } from './stocks'
+import { fetchCapm, fetchBaseFcf, fetchWacc, fetchDcf, fetchPastFcf, calcCagr } from '../stocks'
 
 const ticker = ref('')
 const input = ref('')
@@ -122,20 +122,25 @@ const handleConfirm = async () => {
     <div class="flex flex-col items-center space-y-4">
       <h1 class="text-3xl font-bold">DCF Calculator</h1>
       <div class="flex justify-center space-x-4">
-        <p class="text-lg">{{ ticker }}</p>
+        <!-- <p class="text-lg">{{ ticker }}</p> -->
         <input
           type="text"
           placeholder="Search Ticker"
           v-model="input"
           @keyup.enter="handleConfirm"
-          class="border"
+          class="w-48 rounded-md border border-zinc-600 bg-zinc-800 px-3 py-2 text-white placeholder-zinc-400 focus:border-blue-500 focus:ring-blue-500"
         />
-        <button class="rounded bg-gray-400 px-3 py-1" @click="handleConfirm">Search</button>
+        <button
+          class="rounded-md bg-blue-600 px-5 py-2 font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          @click="handleConfirm"
+        >
+          Search
+        </button>
       </div>
 
       <div v-if="loading" class="text-lg">Loading...</div>
       <div v-if="error" class="text-lg text-red-500">{{ error }}</div>
-
+      <div v-if="result && !loading && !error" class="text-xl">{{ ticker }}</div>
       <template v-if="!loading && result">
         <div class="flex justify-center space-x-4">
           <p class="text-lg">Stock Price</p>
