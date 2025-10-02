@@ -119,3 +119,30 @@ def calculate_dcf(ticker, base_fcf, growth_rate, perpetual_growth_rate, discount
 
     return round(intrinsic_value,2), round(intrinsic_value * 0.7) 
 
+def get_eps(ticker):
+    headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36"
+    }
+    url = f'https://www.macrotrends.net/stocks/charts/{ticker}/placeholder/eps-earnings-per-share-diluted'
+
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    quarterly_title = soup.find('th', string=re.compile('Quarterly EPS'))
+    if not isinstance(quarterly_title, Tag):
+        raise LookupError("Header not found")
+
+    quarterly_table = quarterly_title.find_next('tbody')
+    if not isinstance(quarterly_table, Tag):
+        raise LookupError("tbody after header not found")
+
+    eps_data = quarterly_table.find_all('tr') 
+
+    eps_price = [
+        (row.find_all('td')[0].get_text(strip=True), #type: ignore
+        float(row.find_all('td')[1].get_text(strip=True).replace('$', ''))) #type: ignore
+        for row in eps_data if len(row.find_all('td')) >= 2 #type: ignore
+    ]
+
+    return eps_price
+

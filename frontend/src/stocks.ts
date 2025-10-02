@@ -9,6 +9,14 @@ const capmCache = new Map<string, number>()
 const baseFcfCache = new Map<string, number>()
 const waccCache = new Map<string, number>()
 const pastFcfCache = new Map<string, number[]>()
+const epsCache = new Map<string, number[]>()
+
+export async function fetchEps(ticker: string): Promise<number[]> {
+  if (epsCache.has(ticker)) return epsCache.get(ticker)!
+  const { data } = await api.get(`/eps/${ticker}`)
+  epsCache.set(ticker, data.eps)
+  return data.eps
+}
 
 export async function fetchPastFcf(ticker: string): Promise<number[]> {
   if (pastFcfCache.has(ticker)) return pastFcfCache.get(ticker)!
