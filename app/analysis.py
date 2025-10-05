@@ -4,11 +4,33 @@ from bs4.element import Tag
 import yfinance as yf
 import re  
 from fastapi import HTTPException
+from datetime import datetime, timedelta
+import pandas as pd 
+
 
 def get_price(ticker):
     dat = yf.Ticker(ticker)
     price = dat.info["currentPrice"]
     return price
+
+def get_historical_prices(ticker, dates):
+    sorted_dates = sorted(dates, key=lambda d: datetime.strptime(d, "%Y-%m-%d"))
+    start_date = datetime.strptime(sorted_dates[0], "%Y-%m-%d") - timedelta(days=7)
+    end_date = datetime.strptime(sorted_dates[-1], "%Y-%m-%d") + timedelta(days=7)
+
+    data = yf.Ticker(ticker).history(start=start_date, end=end_date)
+    data.index = data.index.tz_localize(None) #type: ignore
+    target_dates = pd.to_datetime(dates)
+    price_on_dates = data.reindex(target_dates, method='nearest')
+
+    records = (
+        price_on_dates.reset_index().rename(columns={"index": "date", "Close": "price"})
+    )
+    records["date"] = records["date"].dt.strftime("%Y-%m-%d")
+    records["price"] = records["price"].astype(float).round(2)
+    payload = records.to_dict(orient="records")
+
+    return payload
 
 def get_past_fcfs(ticker):
     headers = {

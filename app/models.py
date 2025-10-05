@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List 
 
 class DCFRequest(BaseModel):
     base_fcf: float
@@ -10,3 +11,14 @@ class DCFRequest(BaseModel):
 class DCFResponse(BaseModel):
     base_case: float 
     thirty_percent_margin_of_safety: float 
+
+class PriceRequest(BaseModel):
+    dates: List[str]
+
+class PricePoint(BaseModel):
+    date: str 
+    price: float 
+
+class PriceSeriesResponse(BaseModel):
+    ticker: str 
+    points: List[PricePoint]
