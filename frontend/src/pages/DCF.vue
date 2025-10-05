@@ -42,7 +42,15 @@ const discountRatePercent = computed({
   },
 })
 
-const result = ref<any>(null)
+const marginOfSafetyPercent = computed({
+  get: () => +(marginOfSafety.value * 100).toFixed(2),
+  set: (val: number) => {
+    const v = isFinite(val) ? val : 0
+    marginOfSafety.value = v / 100
+  },
+})
+
+const result = ref<number | null>(null)
 const error = ref('')
 
 const saveInput = () => {
@@ -70,7 +78,7 @@ const calculateDcf = async () => {
   }
 }
 
-watch([growthRate, years, perpetualGrowthRate, discountRate], () => {
+watch([growthRate, years, perpetualGrowthRate, discountRate, marginOfSafety], () => {
   if (result.value !== null) {
     calculateDcf()
   }
@@ -234,11 +242,18 @@ const handleConfirm = async () => {
           </div>
           <div class="flex justify-center space-x-4">
             <p class="text-lg">Fair Value</p>
-            <p class="text-lg">${{ result.toFixed(2) }}</p>
+            <p class="text-lg">${{ (result * (1 - marginOfSafety)).toFixed(2) }}</p>
           </div>
           <div class="flex justify-center space-x-4">
             <p class="text-lg">Margin of Safety</p>
-            <p class="text-lg">{{ marginOfSafety * 100 }}%</p>
+            <div class="flex justify-center">
+              <input
+                type="number"
+                v-model.number="marginOfSafetyPercent"
+                class="w-16 text-center bg-gray-800 text-white"
+                step="5"
+              />
+            </div>
           </div>
         </div>
       </template>
