@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException 
 from fastapi.middleware.cors import CORSMiddleware
 import analysis
-from models import DCFRequest, DCFResponse
+from models import DCFRequest, DCFResponse, PriceRequest, PriceSeriesResponse
 
 app = FastAPI()
 
@@ -29,6 +29,19 @@ def get_price_endpoint(ticker:str):
         raise HTTPException(status_code=404, detail=f"Not enough data for calculation") 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal Error: {e}")  
+        
+    
+@app.post("/historicalPrice/{ticker}", response_model=PriceSeriesResponse)
+def get_historical_prices_endpoint(ticker:str, body: PriceRequest):
+    try: 
+        points = analysis.get_historical_prices(ticker, body.dates)
+        if not points: 
+            raise HTTPException(status_code=404, detail="No price data found")
+        return {"ticker": ticker.upper(), "points": points}
+    except HTTPException:
+        raise 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error {e}")
 
 
 @app.get("/pastfcf/{ticker}")

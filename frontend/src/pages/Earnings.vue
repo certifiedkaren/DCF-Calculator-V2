@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { fetchEps } from '../stocks'
 import { Line } from 'vue-chartjs'
+import axios from 'axios'
 import {
   Chart,
   LineElement,
@@ -13,8 +14,11 @@ import {
   Filler,
   Title,
   CategoryScale,
+  BarElement,
+  type Scale,
+  type CoreScaleOptions,
+  type Tick,
 } from 'chart.js'
-
 import 'chartjs-adapter-date-fns'
 
 Chart.register(
@@ -27,9 +31,11 @@ Chart.register(
   Filler,
   Title,
   CategoryScale,
+  BarElement,
 )
 
 const earnings = ref<[string, number][]>()
+const prices = ref<{ x: Date; y: number | null }[]>()
 
 const sorted = computed(() =>
   earnings.value
@@ -39,6 +45,7 @@ const sorted = computed(() =>
 
 const labels = computed(() => sorted.value.map(([d]) => new Date(d)))
 const values = computed(() => sorted.value.map(([, v]) => v))
+const epsDates = computed(() => sorted.value.map(([d]) => d))
 
 const data = computed(() => ({
   labels: labels.value,
@@ -46,12 +53,24 @@ const data = computed(() => ({
     {
       label: 'EPS',
       data: values.value,
+      yAxisId: 'y',
       fill: false,
       tension: 0.25,
       pointRadius: 2,
       borderWidth: 2,
       borderColor: '#3b82f6',
       backgroundColor: '#3b82f6',
+    },
+    {
+      label: 'Price ($)',
+      data: prices.value,
+      yAxisId: 'yPrice',
+      fill: false,
+      tension: 0.25,
+      pointRadius: 2,
+      borderWidth: 2,
+      borderColor: '#22c55e',
+      backgroundColor: '#22c55e',
     },
   ],
 }))
@@ -60,6 +79,7 @@ const options = {
   responsive: true,
   maintainAspectRatio: false,
   animation: { duration: 300 },
+  parsing: true,
   scales: {
     x: {
       type: 'time' as const,
@@ -84,6 +104,16 @@ const options = {
         color: '#9ca3af',
       },
     },
+    // yPrice: {
+    //   position: 'right' as const,
+    //   beginAtZero: false,
+    //   ticks: {
+    //     callback: (v: number) => `$${Number(v).toFixed(2)}`,
+    //     color: '#9ca3af',
+    //   },
+    //   title: { display: true, text: 'Price ($)', color: '#9ca3af' },
+    //   grid: { drawOnChartArea: false },
+    // },
   },
   plugins: {
     title: {
@@ -116,6 +146,15 @@ const input = ref('')
 const error = ref('')
 const loading = ref(false)
 
+const fetchHistoricalPrice = async (ticker: string, dates: string[]) => {
+  const response = await axios.post(`http://127.0.0.1:8000/historicalPrice/${ticker}`, { dates })
+  return response.data
+}
+
+const loadPriceSeries = async (ticker: string) => {
+  const points = await fetchHistoricalPrice(ticker, epsDates.value)
+}
+
 const saveInput = () => {
   if (input.value) {
     ticker.value = input.value.toUpperCase()
@@ -139,9 +178,12 @@ const handleConfirm = async () => {
   saveInput()
   if (!ticker.value) return
   loading.value = true
-
   try {
     await getEps()
+    if (earnings.value) {
+      await loadPriceSeries(ticker.value)
+      await loadPriceSeries(ticker.value)
+    }
   } catch (err: any) {
     error.value = 'Failed to fetch data. Please check the ticker and try again.'
   } finally {

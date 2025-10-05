@@ -130,7 +130,6 @@ const handleConfirm = async () => {
     <div class="flex flex-col items-center space-y-4">
       <h1 class="text-3xl font-bold">DCF Calculator</h1>
       <div class="flex justify-center space-x-4">
-        <!-- <p class="text-lg">{{ ticker }}</p> -->
         <input
           type="text"
           placeholder="Search Ticker"
