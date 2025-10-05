@@ -10,7 +10,6 @@ class DCFRequest(BaseModel):
 
 class DCFResponse(BaseModel):
     base_case: float 
-    thirty_percent_margin_of_safety: float 
 
 class PriceRequest(BaseModel):
     dates: List[str]

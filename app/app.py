@@ -112,7 +112,7 @@ def get_eps_endpoint(ticker: str):
 @app.post("/dcf/{ticker}", response_model=DCFResponse) 
 def get_dcf_endpoint(ticker:str, payload: DCFRequest):
     try:
-        base_case, mos_30 = analysis.calculate_dcf(
+        dcf_result = analysis.calculate_dcf(
             ticker = ticker,
             base_fcf = payload.base_fcf,
             growth_rate = payload.growth_rate, 
@@ -121,8 +121,7 @@ def get_dcf_endpoint(ticker:str, payload: DCFRequest):
             years = payload.years
         )
         return DCFResponse(
-            base_case = base_case, 
-            thirty_percent_margin_of_safety=mos_30
+            base_case = dcf_result[0] 
         )
         
     except KeyError as e:
